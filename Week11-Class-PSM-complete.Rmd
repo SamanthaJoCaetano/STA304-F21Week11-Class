@@ -1,0 +1,157 @@
+---
+title: "STA304-Week11 Class - Answers"
+author: "Dr. Samantha-Jo Caetano"
+date: "01/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Causal Inference
+
+## Grabbing the Data
+
+Let's do a naive propensity score analysis on the palmer penguins data. Let's see if being an Adelie penguin or not has a causal effect on the penguin's beak length. 
+
+Note: This specific analysis is not really suitable for the final project since it is not really an interesting question, and some of the decisions we will make throughout the analysis are questionable, but the purpose here is to demonstrate how to code a propensity score analysis. Your job on the final project is to perform causal inference methodology on an appropriate dataset to answer the question "Does the treatment effect my outcome?"
+
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+
+penguins # this is the dataset
+
+```
+
+
+Let's use glimpse and summary to get to know the data
+
+```{r}
+glimpse(penguins)
+summary(penguins)
+```
+
+
+Let's take a look at the data:
+
+```{r}
+boxplot(penguins$bill_length_mm ~ penguins$species)
+
+## Note: we recommend ggplot for the final report (and any other reports), 
+## but we're just taking a look here so we'll use base R
+
+```
+
+
+There are some NAs, let's remove them. (Aside: you can also use an imputation technique, depending on how comfortable you are with your data).
+
+
+```{r}
+penguins_clean <- penguins %>% 
+  filter(!is.na(bill_length_mm) & !is.na(bill_depth_mm) & 
+           !is.na(flipper_length_mm) & !is.na(body_mass_g) & 
+           !is.na(sex))
+
+summary(penguins_clean)
+```
+
+
+Okay, looks better. In the next section we'll use propensity score matching to see if being an Adelie penguin or not has a causal effect on the penguin's beak length. 
+
+## Propensity Score Matching
+
+
+Does being an Adelie penguin or not have a causal effect on the penguin's beak length?
+
+Outcome variable: Beak Length
+Treatment Group: Adelie
+Control Group: Not Adelie
+Predictors to estimate the propensity of being in treatment: sex, island, body_mass_g (can use others, or can select a model here, let's just use these 3 to keep the model simple). 
+
+We need a "Treatment" variable in the data, so let's do some wrangling:
+
+```{r}
+penguins_clean <- penguins_clean %>% mutate(
+  treatment = case_when(species=="Adelie" ~ 1,
+                        species!="Adelie" ~ 0))
+
+## Let's run a small sanity check to make sure this makes sense
+penguins_clean %>% select(species, treatment) %>% head(10)
+table(penguins_clean$treatment)
+table(penguins_clean$species)
+```
+
+Alrighty, let's use a logistic regression model to build a "propensity to be in the treatment group". We will just use sex, island, body_mass_g in this example, but you can use other predictors to assess propensity to be in the treatment group.
+
+```{r}
+prop_model <- glm(treatment ~ sex + island + body_mass_g, data=penguins_clean, family=binomial)
+
+
+penguins_clean <- penguins_clean %>% 
+  mutate(predicted_propensity = 
+           predict(prop_model, data = penguins_clean, type = "response"))
+
+# Now we use our forecast to create matches. 
+# For every penguin who was actually treated (species=Adelie) 
+# we want the untreated penguin who was considered as similar 
+# to them (based on propensity score) as possible.
+
+penguins_clean <- 
+  penguins_clean %>% 
+  arrange(predicted_propensity, treatment)
+
+## We will use the arm package which contains the matching function 
+## This finds which is the closest of the ones that were treated, to 
+## each one that was not treated.
+
+library(arm)
+
+matches <- matching(z = penguins_clean$treatment, 
+                         score = penguins_clean$predicted_propensity)
+
+penguins_clean <- cbind(penguins_clean, matches)
+
+## Now we can reduce the data to only contain the matches
+penguins_matched <- 
+  penguins_clean %>% 
+  filter(match.ind != 0)
+
+```
+
+```{r}
+# Now we can examinethe 'effect' of being in the treatment group on
+# on the average bill length.
+
+prop_reg_model <- 
+  lm(bill_length_mm ~ treatment, 
+                data = penguins_matched)
+
+
+summary(prop_reg_model)
+
+## OR huxtable::huxreg(prop_reg_model)
+## OR kable()
+## OR broom
+
+```
+
+
+
+
+
+Follow-Up Questions/Notes:
+
+1. Instead of an lm() what was another test that could have been used in the last chunk?
+
+Answer: A two sample t-test
+
+2. What would change if instead we wanted to answer "Does being an Adelie penguin or not have a causal effect on whether the penguins beak is below 40mm?"
+
+Answer: In this case the outcome would be binary (long vs short beak) and so we'd need to wrangle/mutate this outcome variable in the cleaning process and we'd use a logistic regression model in the final chunk of code (instead of linear regression).
+
+3. Please don't use the iris or cars data for the final project. There is far more modern data on ecology/cars data available that you can use to answer more interesting questions.
+
+

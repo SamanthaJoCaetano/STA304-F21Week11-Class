@@ -1,0 +1,125 @@
+---
+title: "STA304-Week11 Class"
+author: "Dr. Samantha-Jo Caetano"
+date: "01/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Causal Inference
+
+## Grabbing the Data
+
+Let's do a naive propensity score analysis on the palmer penguins data. Let's see if being an Adelie penguin or not has a causal effect on the penguin's bill length. 
+
+Note: This specific analysis is not really suitable for the final project since it is not really an interesting question, and some of the decisions we will make throughout the analysis are questionable, but the purpose here is to demonstrate how to code a propensity score analysis. Your job on the final project is to perform causal inference methodology on an appropriate dataset to answer the question "Does the treatment effect my outcome?"
+
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+
+penguins # this is the dataset
+
+```
+
+
+Let's use glimpse and summary to get to know the data
+
+```{r}
+glimpse(penguins)
+summary(penguins)
+```
+
+
+Let's take a look at the data:
+
+```{r}
+
+## Note: we recommend ggplot for the final report (and any other reports), 
+## but we're just taking a look here so we'll use base R
+
+```
+
+
+There are some NAs, let's remove them. (Aside: you can also use an imputation technique, depending on how comfortable you are with your data).
+
+
+```{r}
+
+```
+
+
+Okay, looks better. In the next section we'll use propensity score matching to see if being an Adelie penguin or not has a causal effect on the penguin's bill length. 
+
+## Propensity Score Matching
+
+
+Does being an Adelie penguin or not have a causal effect on the penguin's bill length?
+
+Outcome variable: 
+Treatment Group: 
+Control Group: 
+Predictors to estimate the propensity of being in treatment: 
+
+
+We need a "Treatment" variable in the data, so let's do some wrangling:
+
+```{r}
+
+## Let's run a small sanity check to make sure this makes sense
+
+```
+
+Alrighty, let's use a logistic regression model to build a "propensity to be in the treatment group". We will just use sex, island, body_mass_g in this example, but you can use other predictors to assess propensity to be in the treatment group.
+
+```{r}
+
+
+# Now we use our forecast to create matches. 
+# For every penguin who was actually treated (species=Adelie) 
+# we want the untreated penguin who was considered as similar 
+# to them (based on propensity score) as possible.
+
+
+
+## We will use the arm package which contains the matching function 
+## This finds which is the closest of the ones that were treated, to 
+## each one that was not treated.
+
+library(arm)
+
+
+## Now we can reduce the data to only contain the matches
+
+
+```
+
+```{r}
+# Now we can examinethe 'effect' of being in the treatment group on
+# on the average bill length.
+
+
+
+## OR huxtable::huxreg(prop_reg_model)
+## OR kable()
+## OR broom
+
+```
+
+
+
+
+
+Follow-Up Questions/Notes:
+
+1. Instead of an lm() what was another test that could have been used in the last chunk?
+
+2. What would change if instead we wanted to answer "Does being an Adelie penguin or not have a causal effect on whether the penguins bill is below 40mm?"
+
+3. Please don't use the iris or cars data for the final project. There is far more modern data on ecology/cars data available that you can use to answer more interesting questions.
+
+
