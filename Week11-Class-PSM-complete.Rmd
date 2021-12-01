@@ -112,6 +112,10 @@ library(arm)
 matches <- matching(z = penguins_clean$treatment, 
                          score = penguins_clean$predicted_propensity)
 
+# Note: There are other ways to "match" the pairs, if you use an alternative approach in your final project just be sure to explain how you're performing the matching.
+# Ex1. MatchIt https://cran.r-project.org/web/packages/MatchIt/vignettes/MatchIt.html
+# Ex2. https://cran.r-project.org/web/packages/Matching/Matching.pdf
+
 penguins_clean <- cbind(penguins_clean, matches)
 
 ## Now we can reduce the data to only contain the matches
